@@ -9,7 +9,7 @@ export const AuthContext = createContext(null);
 
 // 2. Configure axios client
 const client = axios.create({
-  baseURL: `${server}/api/v1/users`
+  baseURL: `${server}/api/v1/users`,
 });
 
 // 3. Provider component
@@ -19,14 +19,15 @@ export const AuthProvider = ({ children }) => {
 
   const handleRegister = async (name, username, password) => {
     try {
-      let request = await client.post("/register", {
+      const request = await client.post("/register", {
         name,
         username,
-        password
+        password,
       });
       if (request.status === httpStatus.CREATED) {
         return request.data.message;
       }
+      throw new Error("Registration failed");
     } catch (err) {
       throw err;
     }
@@ -34,11 +35,13 @@ export const AuthProvider = ({ children }) => {
 
   const handleLogin = async (username, password) => {
     try {
-      let request = await client.post("/login", { username, password });
+      const request = await client.post("/login", { username, password });
       if (request.status === httpStatus.OK) {
         localStorage.setItem("token", request.data.token);
         navigate("/home");
+        return request.data;
       }
+      throw new Error("Login failed");
     } catch (error) {
       throw error;
     }
@@ -46,9 +49,10 @@ export const AuthProvider = ({ children }) => {
 
   const getHistoryOfUser = async () => {
     try {
-      return await client.get("/get_all_activity", {
-        params: { token: localStorage.getItem("token") }
+      const request = await client.get("/get_all_activity", {
+        params: { token: localStorage.getItem("token") },
       });
+      return request.data; // return only data
     } catch (e) {
       throw e;
     }
@@ -56,10 +60,11 @@ export const AuthProvider = ({ children }) => {
 
   const addToUserHistory = async (meetingCode) => {
     try {
-      return await client.post("/add_to_activity", {
+      const request = await client.post("/add_to_activity", {
         token: localStorage.getItem("token"),
-        meeting_code: meetingCode
+        meeting_code: meetingCode,
       });
+      return request.data; // return only data
     } catch (e) {
       throw e;
     }
@@ -71,12 +76,8 @@ export const AuthProvider = ({ children }) => {
     addToUserHistory,
     getHistoryOfUser,
     handleRegister,
-    handleLogin
+    handleLogin,
   };
 
-  return (
-    <AuthContext.Provider value={data}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={data}>{children}</AuthContext.Provider>;
 };
